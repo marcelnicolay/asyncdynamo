@@ -80,6 +80,10 @@ class AsyncDynamoDB(AWSAuthConnection):
                  authenticate_requests=True, validate_cert=True, max_sts_attempts=3):
         if not host:
             host = self.DefaultHost
+        
+        self.host = host
+        self.port = port
+        self.is_secure = is_secure
         self.validate_cert = validate_cert
         self.authenticate_requests = authenticate_requests 
         AWSAuthConnection.__init__(self, host,
@@ -157,6 +161,16 @@ class AsyncDynamoDB(AWSAuthConnection):
             if callable(callback):
                 return callback()
     
+    def _get_uri(self):
+        
+        protocol = "https" if self.is_secure else 'http'
+        uri = "%s://%s" % (protocol, host)
+        
+        if self.port:
+            uri += ":%s" % self.port
+
+        return uri
+        
     def make_request(self, action, body='', callback=None, object_hook=None):
         '''
         Make an asynchronous HTTP request to DynamoDB. Callback should operate on
@@ -186,7 +200,7 @@ class AsyncDynamoDB(AWSAuthConnection):
                                                   self.Version, action),
                 'Content-Type' : 'application/x-amz-json-1.0',
                 'Content-Length' : str(len(body))}
-        request = HTTPRequest('https://%s' % self.host, 
+        request = HTTPRequest(self._get_uri, 
             method='POST',
             headers=headers,
             body=body,
