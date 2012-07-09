@@ -4,4 +4,7 @@ README.md
 asyncdynamo/__init__.py
 asyncdynamo/async_aws_sts.py
 asyncdynamo/asyncdynamo.py
-asyncdynamo/orm
+asyncdynamo/orm/
+asyncdynamo/orm/__init__.py
+asyncdynamo/orm/session.py
+asyncdynamo/orm/table.py
