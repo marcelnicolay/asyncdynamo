@@ -164,7 +164,7 @@ class AsyncDynamoDB(AWSAuthConnection):
     def _get_uri(self):
         
         protocol = "https" if self.is_secure else 'http'
-        uri = "%s://%s" % (protocol, host)
+        uri = "%s://%s" % (protocol, self.host)
         
         if self.port:
             uri += ":%s" % self.port
@@ -200,7 +200,8 @@ class AsyncDynamoDB(AWSAuthConnection):
                                                   self.Version, action),
                 'Content-Type' : 'application/x-amz-json-1.0',
                 'Content-Length' : str(len(body))}
-        request = HTTPRequest(self._get_uri, 
+
+        request = HTTPRequest(self._get_uri(), 
             method='POST',
             headers=headers,
             body=body,
@@ -227,7 +228,7 @@ class AsyncDynamoDB(AWSAuthConnection):
             else:
                 # because some errors are benign, include the response when an error is passed
                 return callback(json_response, error=DynamoDBResponseError(response.error.code, 
-                    response.error.message, response.body))
+                    json_response.get('message', ''), json_response))
         return callback(json_response, error=None)
     
     def get_item(self, table_name, key, callback, attributes_to_get=None,

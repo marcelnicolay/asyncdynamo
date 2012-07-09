@@ -1,0 +1,6 @@
+pycurl
+tornado
+boto
+simplejson
+nose
+coverage
