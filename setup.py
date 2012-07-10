@@ -2,7 +2,7 @@ import os
 from distutils.core import setup
 
 # also update version in __init__.py
-version = '0.2.5'
+version = '0.2.6'
 
 setup(
     name="asyncdynamo",
@@ -12,12 +12,11 @@ setup(
     description="async Amazon DynamoDB library for Tornado",
     author="Dan Frank",
     author_email="df@bit.ly",
-    url="http://github.com/bitly/asyncdynamo",
     license="Apache Software License",
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
     ],
-    packages=['asyncdynamo'],
+    packages=['asyncdynamo', 'asyncdynamo.orm'],
     install_requires=['tornado', 'boto'],
     requires=['tornado'],
 )
