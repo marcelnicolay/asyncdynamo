@@ -31,7 +31,7 @@ import logging
 
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
-from boto.auth import HmacAuthV3HTTPHandler
+from boto.auth import HmacAuthV4Handler
 from boto.provider import Provider
 
 from async_aws_sts import AsyncAwsSts, InvalidClientTokenIdError
@@ -86,6 +86,7 @@ class AsyncDynamoDB(AWSAuthConnection):
         self.is_secure = is_secure
         self.validate_cert = validate_cert
         self.authenticate_requests = authenticate_requests 
+        
         AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id,
                                    aws_secret_access_key,
@@ -102,7 +103,7 @@ class AsyncDynamoDB(AWSAuthConnection):
             logging.warn("Unable to get session token: %s" % error)
     
     def _required_auth_capability(self):
-        return ['hmac-v3-http']
+        return ['hmac-v4']
     
     def _update_session_token(self, callback, attempts=0, bypass_lock=False):
         '''
@@ -154,7 +155,7 @@ class AsyncDynamoDB(AWSAuthConnection):
                                      creds.secret_key,
                                      creds.session_token)
             # force the correct auth, with the new provider
-            self._auth_handler = HmacAuthV3HTTPHandler(self.host, None, self.provider)
+            self._auth_handler = HmacAuthV4Handler(self.host, None, self.provider)
             while self.pending_requests:
                 request = self.pending_requests.pop()
                 request()
@@ -180,6 +181,7 @@ class AsyncDynamoDB(AWSAuthConnection):
         If there is not a valid session token, this method will ensure that a new one is fetched
         and cache the request when it is retrieved. 
         '''
+
         this_request = functools.partial(self.make_request, action=action,
             body=body, callback=callback,object_hook=object_hook)
         if self.authenticate_requests and self.provider.security_token in [None, PENDING_SESSION_TOKEN_UPDATE]:
@@ -198,6 +200,7 @@ class AsyncDynamoDB(AWSAuthConnection):
             return
         headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
                                                   self.Version, action),
+                'Host': self.host,
                 'Content-Type' : 'application/x-amz-json-1.0',
                 'Content-Length' : str(len(body))}
 
@@ -206,9 +209,14 @@ class AsyncDynamoDB(AWSAuthConnection):
             headers=headers,
             body=body,
             validate_cert=self.validate_cert)
+            
+        request.params = {}
         request.path = '/' # Important! set the path variable for signing by boto. '/' is the path for all dynamodb requests
+        request.host = self.host
+        
         if self.authenticate_requests:
             self._auth_handler.add_auth(request) # add signature to headers of the request
+        
         self.http_client.fetch(request, functools.partial(self._finish_make_request,
             callback=callback, orig_request=this_request, token_used=self.provider.security_token, object_hook=object_hook)) # bam!
     
